@@ -54,7 +54,7 @@ export function FlightFilterControls({
 
   return (
     <div className="flightFilterControls">
-      <table>
+      <table className="flights-table">
         <thead className="flight-row-header">
           <tr>
             <td>Flight</td>
@@ -66,7 +66,7 @@ export function FlightFilterControls({
           </tr>
         </thead>
         <thead>
-          <tr>
+          <tr className="table-row">
             <td>
               <input type="text" value={flightIdFilter} onChange={(e) => setFlightIdFilter(e.target.value)} />
             </td>
@@ -122,6 +122,17 @@ export function FlightFilterControls({
           })}
         </tbody>
       </table>
+      <div className="main-text-container">
+        <p>This render uses generated data that does not correspond to reality. </p>
+        <p>
+          To visualize some flights simply choose a departure or destination to see all options and un-check "Is
+          currently flying".
+        </p>
+        <p>
+          You can see all available flights by un-checking the "Is currently flying" box. Since they all have dates
+          according to when this workshop was made there are no future flights.
+        </p>
+      </div>
     </div>
   );
 }

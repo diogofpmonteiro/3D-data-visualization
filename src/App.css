@@ -23,7 +23,8 @@
 }
 
 .flight-row-header {
-  background: #6183a5;
+  background: #242424;
+  color: white;
 }
 
 .flight-row:hover {
@@ -47,6 +48,39 @@
   padding: 5px;
   background: #ffa9d3;
   border-radius: 10px;
-  border: 2px solid #6183a5;
+  border: 2px solid white;
   width: max-content;
+}
+
+.main-text-container {
+  display: flex;
+  width: 100%;
+  justify-content: center;
+  flex-direction: column;
+}
+
+.flightFilterControls {
+  max-width: fit-content;
+  margin: 20px;
+}
+
+.flights-table {
+  text-align: center;
+}
+
+.input-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-top: 20px;
+  margin-left: 20px;
+}
+
+.controlPanel {
+  overflow-y: scroll;
+}
+
+.hover-city-name {
+  text-decoration: none;
+  color: white;
 }

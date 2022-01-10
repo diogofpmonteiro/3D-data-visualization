@@ -1,37 +1,80 @@
+import React, { useRef, useState } from 'react';
+import { Group, PointLight } from 'three';
 import { Html } from '@react-three/drei';
-import { useEffect, useRef, useState } from 'react';
-import { Group } from 'three';
-import { EARTH_SURFACE_HEIGHT } from '../constants';
-import { IAirport } from '../types';
+
+import { GLOBE_SCALE } from '../constants';
+import { GLOBE_BASE_RADIUS } from '../models/Globe';
 import { Box, rotationQuaternionForCoordinates } from '../Utilities';
 
-export default function Airport({ airport }: { airport: IAirport }) {
-  const rotationBoxRef = useRef<Group>();
-  const [isHovered, setIsHovered] = useState(false);
+import { IAirport, Number3 } from '../types';
+import { useFrame } from '@react-three/fiber';
 
-  if (rotationBoxRef.current) {
-    const quaternion = rotationQuaternionForCoordinates(airport.latitude, airport.longitude);
-    rotationBoxRef.current.setRotationFromQuaternion(quaternion);
-  }
+const EARTH_SURFACE_ELEVATION = GLOBE_BASE_RADIUS * GLOBE_SCALE;
+
+const LIGHT_POSITION: Number3 = [0, EARTH_SURFACE_ELEVATION + 0.04, 0];
+const CITY_POSITION: Number3 = [0, EARTH_SURFACE_ELEVATION, 0];
+
+export default function Airport(props: { airport: IAirport }) {
+  const rotationBoxRef = useRef<Group>();
+  const lightRef = useRef<PointLight>();
+  const [hover, setHover] = useState<boolean>(false);
+  const [randomBlink] = useState(Math.random());
+
+  const rotationQuaternion = rotationQuaternionForCoordinates(props.airport.latitude, props.airport.longitude);
+
+  useFrame((state, delta) => {
+    if (lightRef.current) {
+      const blinkPeriod = 3 + randomBlink;
+      const phase = (state.clock.elapsedTime % blinkPeriod) / blinkPeriod;
+      if (hover) {
+        lightRef.current.intensity = 3;
+      } else {
+        lightRef.current.intensity = Math.sin(phase * Math.PI * 2) * 0.5 + 0.5;
+      }
+    }
+  });
 
   return (
-    // one group for positioning, one for rotation
-    <group ref={rotationBoxRef}>
-      <group position={[0, EARTH_SURFACE_HEIGHT, 0]}>
-        <Box
-          onPointerOut={() => setIsHovered(false)}
-          onPointerOver={() => setIsHovered(true)}
-          size={[0.1, 0.1, 0.1]}
-          color={isHovered ? 'hotpink' : 'blue'}
-        />
-
-        {isHovered && <pointLight position-y={0.1} intensity={2} color={'white'} />}
-        {isHovered && (
-          <Html>
-            <div className={'info-bubble'}>{airport.city}</div>
-          </Html>
-        )}
-      </group>
+    <group ref={rotationBoxRef} quaternion={rotationQuaternion}>
+      {hover ? (
+        <Html position-y={EARTH_SURFACE_ELEVATION}>
+          <div className="info-bubble" onPointerOver={() => setHover(true)} onPointerOut={() => setHover(false)}>
+            <div>[{props.airport.city}]</div>
+            <div>{props.airport.id} </div>
+            <div>
+              ({props.airport.latitude};{props.airport.longitude})
+            </div>
+            <a
+              className="hover-city-name"
+              rel="noreferrer"
+              target={'_blank'}
+              href={`https://en.wikipedia.org/wiki/${props.airport.city}`}
+            >
+              Wikipedia Page
+            </a>
+          </div>
+        </Html>
+      ) : null}
+      <Box
+        onPointerOver={() => setHover(true)}
+        onPointerOut={() => setHover(false)}
+        size={[0.05, 0.05, 0.05]}
+        color={hover ? 'limegreen' : 'red'}
+        position={CITY_POSITION}
+      />
+      <Sphere position={LIGHT_POSITION} baseColor={hover ? 'limegreen' : 'red'} />
+      <pointLight ref={lightRef} color={hover ? 'limegreen' : 'red'} position={LIGHT_POSITION} />
     </group>
+  );
+}
+
+function Sphere(
+  props: React.PropsWithChildren<{ position: [x: number, y: number, z: number]; baseColor: string; reference?: any }>
+) {
+  return (
+    <mesh {...props} ref={props.reference}>
+      <sphereGeometry args={[0.01]} />
+      <meshStandardMaterial color={props.baseColor} />
+    </mesh>
   );
 }

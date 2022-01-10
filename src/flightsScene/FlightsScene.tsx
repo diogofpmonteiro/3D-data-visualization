@@ -1,102 +1,68 @@
 import { OrbitControls } from '@react-three/drei';
-import { indexBy } from 'ramda';
-// import { useFrame } from '@react-three/fiber';
-import { useEffect, useRef, useState } from 'react';
-import { PointLight } from 'three';
+import React from 'react';
 import Globe from '../models/Globe';
-import { IAirport, IFlight } from '../types';
-import { parseFlightDates } from '../Utilities';
-import Airport from './Airport';
 import Flight from './Flight';
+import Sun from './Sun';
+import { Dictionary, IAirport, IFlight } from '../types';
+import Airport from './Airport';
+import { useFrame } from '@react-three/fiber';
+import { getMinutes } from '../Utilities';
 
-export default function FlightsScene() {
-  const [airportsList, setAirportsList] = useState<IAirport[]>([]);
-  const [airportsMap, setAirportsMap] = useState<{ [key: string]: IAirport }>({});
-  const [flightsList, setFlightsList] = useState<IFlight[]>([]);
+type FlightsSceneProps = {
+  flightsList: IFlight[];
+  airportsMap: Dictionary<IAirport>;
+  airportsList: IAirport[];
+  setSelectedFlight: (flight: IFlight) => void;
+  selectedFlight: IFlight | null;
+  simulationSpeed: number;
+  onSimulationMinuteTick: (timestamp: number) => void;
+};
 
-  useEffect(() => {
-    // ! Attempt at using async await instead of then catch
-    // const getAirportsData = async () => {
-    //   const response = await fetch('./data/airports.json');
-    //   const <airportsData: IAirport[]> = response.json();
-    //   setAirportsList(await airportsData);
+export default function FlightsScene({
+  flightsList,
+  airportsMap,
+  airportsList,
+  setSelectedFlight,
+  selectedFlight,
+  simulationSpeed,
+  onSimulationMinuteTick,
+}: FlightsSceneProps) {
+  useFrame((state, delta) => {
+    const clock = state.clock as any;
+    const worldTimeMs = clock.hackedWorldTime || Date.now();
+    const worldTimeAfterTick = worldTimeMs + Math.floor(delta * 1000 * simulationSpeed);
+    clock.hackedWorldTime = worldTimeAfterTick;
 
-    //   const airportsMap = indexBy(elem => { elem.id, airportsData })
-    //   setAirportsMap(airportsMap)
-    // };
-    // getAirportsData();
-
-    fetch('/data/airports.json')
-      .then((e) => e.json())
-      .then((airportsData: IAirport[]) => {
-        setAirportsList(airportsData);
-
-        const airportsMap = indexBy((e) => e.id, airportsData);
-        setAirportsMap(airportsMap);
-      });
-  }, []);
-
-  useEffect(() => {
-    // ! Attempt at using async await instead of then catch
-    //   const getFlightsData = async () => {
-    //     const response = await fetch('./data/flights.json');
-    //     const flightsData = response.json();
-    //     const flights = flightsData.map((eachFlight: any) => parseFlightDates(eachFlight));
-    //     setFlightsList(await flightsData);
-    //   };
-    //   getFlightsData();
-
-    fetch('/data/flights.json')
-      .then((e) => e.json())
-      .then((flightsData: IFlight[]) => {
-        const flights = flightsData.map((eachFlight: any) => parseFlightDates(eachFlight));
-
-        setFlightsList(flights);
-      });
-  }, []);
-
-  const lightRef = useRef<PointLight>();
-
-  const sydney = airportsList.find((oneAirport) => oneAirport.id === 'SYD');
-  const budapest = airportsList.find((oneAirport) => oneAirport.id === 'BUD');
-
-  //   useFrame((state, delta) => {
-  //     const phase = (state.clock.elapsedTime % 3) / 3;
-  //     const phaseRadians = Math.PI * 2 * phase;
-
-  //     if (lightRef.current) {
-  //       // there are actual [x,y,z] coordinates, hence the variable naming
-  //       const x = Math.sin(phaseRadians) * 10;
-  //       const z = Math.cos(phaseRadians) * 10;
-  //       lightRef.current.position.set(x, 0, z);
-  //     }
-  //   });
-
-  const flights = flightsList.slice(0, 10);
+    if (getMinutes(worldTimeMs) !== getMinutes(worldTimeAfterTick)) {
+      onSimulationMinuteTick(worldTimeAfterTick);
+    }
+    // There's currently no good way of propagating globally calculated information besides using unsafe javascript and piggybacking on global objects.
+    // The alternatives are setState and contexts, but that's a really big performance hit.
+  });
 
   return (
     <>
       <OrbitControls />
-      <pointLight ref={lightRef} intensity={2} position={[2, 2, 2]} />
+      <Sun />
       <Globe />
-
-      {flights.map((flight: IFlight) => {
-        if (airportsList.length > 0) {
-          const to = airportsMap[flight.arrivalAirportId];
-          const from = airportsMap[flight.departureAirportId];
-
-          return <Flight key={flight.id} from={from} to={to} />;
-        } else {
-          return null;
-        }
+      {flightsList.map((flight) => {
+        const from = airportsMap[flight.departureAirportId];
+        const to = airportsMap[flight.arrivalAirportId];
+        const selected = selectedFlight?.id === flight.id;
+        return (
+          <Flight
+            key={flight.id}
+            flight={flight}
+            from={from}
+            to={to}
+            selected={selected}
+            onFlightClicked={() => setSelectedFlight(flight)}
+          />
+        );
       })}
-
-      {airportsList.map((eachAirport) => {
-        return <Airport key={eachAirport.id} airport={eachAirport} />;
+      {airportsList.map((airport) => {
+        return <Airport key={airport.id} airport={airport} />;
       })}
-
-      {sydney && budapest && <Flight from={sydney!} to={budapest!} />}
-      {budapest && budapest && <Flight from={budapest!} to={sydney!} />}
     </>
   );
 }
