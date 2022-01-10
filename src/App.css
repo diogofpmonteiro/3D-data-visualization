@@ -84,3 +84,10 @@
   text-decoration: none;
   color: white;
 }
+
+.loading-screen {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: auto
+}

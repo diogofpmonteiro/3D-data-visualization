@@ -62,7 +62,7 @@ function FlightVisualizationApp() {
           onFilteringChanged={setFilteredFlights}
         />
       </aside>
-      <React.Suspense fallback={<div>Loading data...ð</div>}>
+      <React.Suspense fallback={<div className="loading-screen">Loading data... ∞</div>}>
         <Canvas id="canvas">
           <FlightsScene
             flightsList={filteredFlights}

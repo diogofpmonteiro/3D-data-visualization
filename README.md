@@ -8,4 +8,4 @@ You can find their original github repo here: https://github.com/benestudio/reac
 - Demonstrate building applications that use 3D rendering through a react-ish interface.
 - The end-product we're going to build is an app that visualizes some flight data (generated, but may as well fetch real data).
 
-You can see the final product here: https://diogofpmonteiro.github.io/3D-data-visualization/
+You can see the final product here: https://3d-flight-visualization.netlify.app
